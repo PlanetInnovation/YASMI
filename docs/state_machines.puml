@@ -1,0 +1,110 @@
+' MARK: TestStateMachine1
+@startuml TestStateMachine1
+
+!include state_machine_routines.iuml
+
+title Test State Machine 1
+
+$state("NewState", $entry="entry_actions()", $do="do_actions()")
+$transition("[*]", "/ dummy_action()", "NewState")
+
+@enduml
+
+' MARK: TestStateMachine2
+@startuml TestStateMachine2
+
+!include state_machine_routines.iuml
+
+title Test State Machine 2
+
+$composite_state("NewCompositeState", $entry="entry_actions()", $do="do_actions()") {
+    $state("NewState", $entry="entry_actions()", $do="do_actions()")
+    $transition("[*]", "/ dummy_action()", "NewState")
+}
+$transition("[*]", "/ dummy_action()", "NewCompositeState")
+
+@enduml
+
+' MARK: TestStateMachine3
+@startuml TestStateMachine3
+
+!include state_machine_routines.iuml
+
+title Test State Machine 3
+
+$state("NewState1", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+$state("NewState2", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+$transition("[*]", "/ dummy_action_1()", "NewState1")
+$transition("NewState1", "event / dummy_action_2()", "NewState2")
+$transition("NewState2", "event / dummy_action_3()", "NewState1")
+
+@enduml
+
+' MARK: TestStateMachine4
+@startuml TestStateMachine4
+
+!include state_machine_routines.iuml
+
+title Test State Machine 4
+
+$composite_state("NewCompositeState1", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()") {
+    $state("NewState1", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $state("NewState2", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $transition("[*]", "", "NewState1")
+    $transition("NewState1", "event_1 / dummy_action_3()", "NewState2")
+    $transition("NewState2", "event_1", "[*]")
+}
+
+$composite_state("NewCompositeState2", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()") {
+    $state("NewState3", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $state("NewState4", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $transition("[*]", "/ dummy_action_4()", "[H]")
+    $transition("[H]", "", "NewState3")
+    $transition("NewState3", "event_1 / dummy_action_5()", "NewState4")
+    $transition("NewState4", "event_1 / dummy_action_6()", "[*]")
+}
+
+$transition("[*]", "", "NewCompositeState1")
+$transition("NewCompositeState1", "/ dummy_action_1()", "NewCompositeState2")
+$transition("NewCompositeState1", "event_2", "NewCompositeState2")
+$transition("NewCompositeState2", "", "NewCompositeState1")
+$transition("NewCompositeState2", "event_2 / dummy_action_2()", "NewCompositeState1")
+
+@enduml
+
+' MARK: TestStateMachine5
+@startuml TestStateMachine5
+
+!include state_machine_routines.iuml
+
+title Test State Machine 5
+
+$composite_state("NewCompositeState1", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()") {
+    $state("NewState1", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $state("NewState2", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $transition("[*]", "", "NewState1")
+    $transition("NewState1", "event_1", "NewState2")
+    $transition("NewState2", "event_1", "[*]")
+}
+
+$composite_state("NewCompositeState2", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()") {
+    $state("NewState3", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $state("NewState4", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $state("NewState5", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $state("NewState6", $entry="entry_actions()", $do="do_actions()", $exit="exit_actions()")
+    $transition("[*]", "", "NewState3")
+    $transition("[*]", "", "NewState5")
+    $transition("NewState3", "event_1", "NewState4")
+    $transition("NewState5", "event_3", "NewState6")
+    $transition("NewState4", "event_1", "[*]")
+    $transition("NewState6", "event_3", "[*]")
+}
+
+$transition("[*]", "", "NewCompositeState1")
+$transition("NewCompositeState1", "", "NewCompositeState2")
+$transition("NewCompositeState1", "event_2", "NewCompositeState2")
+$transition("NewCompositeState2", "", "NewCompositeState1")
+$transition("NewCompositeState2", "event_2", "NewCompositeState1")
+
+@enduml
+
