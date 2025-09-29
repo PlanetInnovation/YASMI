@@ -1,0 +1,532 @@
+@startuml state_machine_routines
+
+!include https://raw.githubusercontent.com/davmf/plantuml-utilities/main/common.iuml
+
+'scale 4096 height
+
+/' Provision for footer with latest date
+ ' However, reduces version control usability as it
+ ' updates the output artifact every build, regardless of
+ ' whether the input has changed
+ '/
+'right footer Updated %date("yyyy.MM.dd' at 'HH:mm")
+
+hide empty description
+
+skinparam Linetype ortho
+skinparam Nodesep 10
+skinparam Ranksep 20
+skinParam TabSize 2
+
+skinParam TitleFontSize 24
+
+skinparam state {
+    BorderColor<<transition>> transparent
+    BackgroundColor<<transition>> #F8F8F8
+    BorderColor<<hidden>> transparent
+    BorderColor<<transition_hidden>> transparent
+    BackgroundColor<<hidden>> transparent
+    BackgroundColor<<transition_hidden>> transparent
+    FontColor<<hidden>> transparent
+    FontColor<<transition_hidden>> transparent
+    FontSize<<transition>> 10
+    FontSize<<proxy>> 8
+    FontSize<<transition_hidden>> 10
+    FontSize 12
+}
+
+skinParam RoundCorner<<transition>> 0
+skinParam RoundCorner<<transition_hidden>> 0
+
+skinparam note {
+    FontColor<<hidden>> #transparent
+    BackgroundColor<<hidden>> #transparent
+    BorderColor<<hidden>> #transparent
+}
+
+' transition types
+!$unclassified = 0
+!$primary = 1
+!$secondary = 2
+!$exception = 3
+
+!if %not(%variable_exists("$remove_hidden_items"))
+    !$remove_hidden_items = %false()
+!endif
+
+' MARK: is_match
+!function $is_match($tags, $filter_prefix)
+    !$tags = $tags + " "
+    !$i = 1
+    !$token_name = "$" + $filter_prefix + $i
+
+    !while (%variable_exists($token_name))
+        !$token_value = %get_variable_value($token_name) + " "
+
+        !if (%strpos($tags, $token_value) >= 0)
+            !return %true()
+        !endif
+
+        !$i = $i + 1
+        !$token_name = "$" + $filter_prefix + $i
+    !endwhile
+
+    !return %false()
+!endfunction
+
+' Determine whether a item should be visible using its tags
+'
+' An item is deemed to be visible if any of the following are true:
+'  - no tags
+'  - no in filter and either no out filter or none of the tags are
+'    in the out filter
+'  - an in filter containing at least one of the tags
+'
+'  Returns:
+'    Whether the item is visible
+' MARK: is_visible
+!function $is_visible($tags)
+    !if $tags == ""
+        !return %true()
+    !endif
+
+    !if $in == ""
+        !if $out == ""
+            !return %true()
+        !endif
+
+        !return %not($is_match($tags, "out"))
+    !else
+        !return $is_match($tags, "in")
+    !endif
+!endfunction
+
+' MARK: concurrent
+!function $concurrent($tags="")
+    !if $is_visible($tags) || %not($remove_hidden_items)
+        !return %chr(124)+%chr(124)
+    !else
+        !return ""
+    !endif
+!endfunction
+
+!function $event($name)
+    !return "**" + $name + "**"
+!endfunction
+
+!function $guard($name)
+    !return "[" + $name + " ?]"
+!endfunction
+
+!function $true()
+    !return "true"
+!endfunction
+
+!function $false()
+    !return "false"
+!endfunction
+
+!function $br()
+    !return " /<br>"
+!endfunction
+
+!function $_composite_state($name, $tags="")
+    !if $is_visible($tags)
+        !return "state " + %chr(34) + "<size:16>**" + $name + "**" + %chr(34) + " as " + $make_symbol($name)
+    !else
+        !return "state " + %chr(34) + "<size:16>**" + $name + "**" + %chr(34) + " as " + $make_symbol($name) + " <<hidden>>"
+    !endif
+!endfunction
+
+'# MARK: composite_state_behaviour
+!procedure $composite_state_behaviour($name, $entry="", $do="", $exit="")
+    !$name = $make_symbol($name)
+    !$text = ""
+
+    !if $entry != ""
+        !$entry = $strrepl($entry, "<br>", "|\n| |")
+        !$text = $text + "<#transparent,#transparent>|<r>//entry//: |" + $entry + " |"
+    !endif
+
+    !if $do != ""
+        !$do = $strrepl($do, "<br>", "|\n| |")
+        !if $text != ""
+            !$text = $text + "\n"
+        !else
+            !$text = "<#transparent,#transparent>"
+        !endif
+
+        !$text = $text + "|<r>//do//: |" + $do + " |"
+    !endif
+
+    !if $exit != ""
+        !if $text != ""
+            !$text = $text + "\n"
+        !else
+            !$text = "<#transparent,#transparent>"
+        !endif
+
+        !$text = $text + "|<r>//exit//: |" + $exit + " |"
+    !endif
+
+    !if $text != ""
+        $name : $text
+    !endif
+!endprocedure
+
+!function $composite_state($name, $entry="", $do="", $exit="", $tags="")
+    $composite_state_behaviour($name, $entry, $do, $exit)
+    !return $_composite_state($name, $tags)
+!endfunction
+
+' Return whether two sets of tags intersect
+!function $is_str_match($a, $b)
+    !if %strpos($a, $b) >= 0 !return %true()
+    !return %false()
+!endfunction
+
+'# MARK: state
+!procedure $state($name, $entry="", $do="", $exit="", $tags="", $colour="", $ui="")
+    !$label = "**" + $name + "**"
+    !$text = ""
+
+    !if $entry != ""
+        !$entry = $strrepl($entry, "<br>", "|\n| |")
+        !$entry = $strrepl($entry, "<br1>", "|\n| |  ")
+        !$entry = $strrepl($entry, "<br2>", "|\n| |    ")
+        !$text = $text + "<#transparent,#transparent>|<r>//entry//: |" + $entry + " |"
+    !endif
+
+    !if $do != ""
+        !$do = $strrepl($do, "<br>", "|\n| |")
+        !$do = $strrepl($do, "<br1>", "|\n| |  ")
+        !$do = $strrepl($do, "<br2>", "|\n| |    ")
+
+        !if $text != ""
+            !$text = $text + "\n"
+        !else
+            !$text = "<#transparent,#transparent>"
+        !endif
+
+        !$text = $text + "|<r>//do//: |" + $do + " |"
+    !endif
+
+    !if $exit != ""
+        !$exit = $strrepl($exit, "<br>", "|\n| |")
+        !$exit = $strrepl($exit, "<br1>", "|\n| |  ")
+        !$exit = $strrepl($exit, "<br2>", "|\n| |    ")
+
+        !if $text != ""
+            !$text = $text + "\n"
+        !else
+            !$text = "<#transparent,#transparent>"
+        !endif
+
+        !$text = $text + "|<r>//exit//: |" + $exit + " |"
+    !endif
+
+    !if $ui != "" && $is_visible($tags)
+        !$text = $text + "\n" + $ui_content($ui)
+    !endif
+
+    !if $colour != ""
+        !$colour = %lighten($colour, 98)
+    !endif
+
+    !if $text != ""
+        !if $is_visible($tags)
+            state $make_symbol($name) as "<size:16>$label" $colour : $text
+        !elseif %not($remove_hidden_items)
+            state $make_symbol($name) as "<size:16>$label" <<hidden>> : $text
+        !endif
+    !else
+        !if $is_visible($tags)
+            state $make_symbol($name) as "<size:16>$label" $colour
+        !elseif %not($remove_hidden_items)
+            state $make_symbol($name) as "<size:16>$label" <<hidden>>
+        !endif
+    !endif
+!endprocedure
+
+'# MARK: entry_point
+!procedure $entry_point($name, $tags="")
+    !if $is_visible($tags)
+        state $make_symbol($name) as " " <<entryPoint_point>>
+    !else
+        state $make_symbol($name) as " " <<entryPoint_hidden>>
+    !endif
+!endprocedure
+
+'# MARK: exit_point
+!procedure $exit_point($name, $tags="")
+    !if $is_visible($tags)
+        state $make_symbol($name) as " " <<exitPoint>>
+    !else
+        state $make_symbol($name) as " " <<exitPoint_hidden>>
+    !endif
+!endprocedure
+
+'# MARK: join
+!procedure $join($name, $tags="")
+    !if $is_visible($tags)
+        state $make_symbol($name) as " " <<join>>
+    !else
+        state $make_symbol($name) as " " <<join_hidden>>
+    !endif
+!endprocedure
+
+'# MARK: fork
+!procedure $fork($name, $tags="")
+    !if $is_visible($tags)
+        state $make_symbol($name) as " " <<fork>>
+    !else
+        state $make_symbol($name) as " " <<fork_hidden>>
+    !endif
+!endprocedure
+
+'# MARK: choice
+!procedure $choice($name, $tags="")
+    !if $is_visible($tags)
+        state $make_symbol($name) <<choice>>
+    !else
+        state $make_symbol($name) <<choice>> #transparent##transparent
+    !endif
+!endprocedure
+
+!function $is_proxy_state($name)
+    !if %strpos($name, "_proxy") > 0
+        !return %true()
+    !else
+        !return %false()
+    !endif
+!endfunction
+
+!function $actual_state($proxy_state)
+    !$proxy_length = %strlen($proxy_state)
+    !return %substr($proxy_state, 0, $proxy_length - 6)
+!endfunction
+
+
+'  +────+
+'  │ $a │
+'  +─┬──+
+'    │
+'   $t
+'    │
+'    V
+'  +----+
+'  │ $b │
+'  +────+
+'
+'# MARK: transition
+!procedure $transition($a, $t="", $b="", $colour="", $note="", $tags="", $type=$unclassified, $note_dir="right", $ui="", $icon="", $down=%true())
+    !$a = $make_symbol($a)
+    !$b = $make_symbol($b)
+
+    !if $type == $primary
+        !$colour = "#Green"
+        !$thickness = 4
+    !elseif $type == $secondary
+        !$colour = "#Blue"
+        !$thickness = 2
+    !elseif $type == $exception
+        !$colour = "#Red"
+        !$thickness = 1
+    !else
+        !$colour = "#Black"
+        !$thickness = 1
+    !endif
+
+    !if $is_visible($tags)
+        !$stereotype = "transition"
+    !else
+        !$stereotype = "transition_hidden"
+        !$colour = "#transparent"
+    !endif
+
+    !if $is_visible($tags) || %not($remove_hidden_items)
+        !if $t != "" || $ui != "" || $icon != ""
+            !$transition_node = $new_node()
+
+            !if $ui != "" && $is_visible($tags)
+                !$t = $ui_content($ui + " | " + $t)
+
+                !if $a == "[*]"
+                    !$a = $new_node()
+                    state $a <<start>> $colour
+                !elseif $b == "[*]"
+                    !$b = $new_node()
+                    state $b <<end>> $colour
+                !endif
+
+            !elseif $icon != "" && $is_visible($tags)
+                !$t = "<color:" + $colour + ">" + $icon + "</color>"
+
+            !else
+                !if $a == "[*]"
+                    !$a = $new_node()
+                    state $a <<start>> $colour
+                !else
+                    !if $b == "[*]"
+                        !$b = $new_node()
+                        state $b <<end>> $colour
+                    !elseif $is_proxy_state($b)
+                        !$label = $actual_state($b)
+                        !$b = $new_node()
+                        !$node_colour = %lighten($colour, 98)
+                        state $b as "$label" <<proxy>> $node_colour
+                    !endif
+                !endif
+
+                !$t = "<#transparent,#transparent>|<color:" + $colour + ">" + $t + "|"
+                !$repl = "|\n|" + "<color:" + $colour + ">"
+                !$t = $strrepl($t, "<br>", $repl)
+                !$repl = "|\n|" + "<color:" + $colour + ">  "
+                !$t = $strrepl($t, "<br1>", $repl)
+                !$repl = "|\n|" + "<color:" + $colour + ">    "
+                !$t = $strrepl($t, "<br2>", $repl)
+            !endif
+
+            state "$t" as $transition_node <<$stereotype>>
+
+            !if $note != ""
+                $add_note($note, $note_dir, $tags, $transition_node)
+            !endif
+
+            !if $down
+                $a -[$colour,thickness=$thickness]->o $transition_node
+                $transition_node -[$colour,thickness=$thickness]-> $b
+            !else
+                $a -[$colour,thickness=$thickness]>o $transition_node
+                $transition_node -[$colour,thickness=$thickness]> $b
+            !endif
+        !else
+            !if $a == "[*]"
+                !$a = $new_node()
+                state $a <<start>> $colour
+            !else
+                !if $b == "[*]"
+                    !$b = $new_node()
+                    state $b <<end>> $colour
+                !elseif $is_proxy_state($b)
+                    !$label = $actual_state($b)
+                    !$b = $new_node()
+                    !$node_colour = %lighten($colour, 98)
+                    state $b as "$label" <<proxy>> $node_colour
+                !endif
+            !endif
+
+            !if $down
+                $a -[$colour,thickness=$thickness]-> $b
+            !else
+                $a -[$colour,thickness=$thickness]> $b
+            !endif
+        !endif
+    !endif
+!endprocedure
+
+'# MARK: input_node
+!procedure $input_node($node, $colour, $tags="")
+    state $node <<start>> $colour
+!endprocedure
+
+'# MARK: output_node
+!procedure $output_node($node, $colour, $tags="")
+    state $node <<end>> $colour
+!endprocedure
+
+'# MARK: draft_labels
+!procedure $draft_labels($font_size=72)
+    center header <font color=red size=$font_size>""**DRAFT     DRAFT     DRAFT     DRAFT**""
+!endprocedure
+
+!function $guard_action($g, $a)
+    !return $guard($g)+$br()+$a
+!endfunction
+
+!function $action1($text)
+    !return "<br1>" + $text
+!endfunction
+
+!function $action2($text)
+    !return "<br2>" + $text
+!endfunction
+
+!function $action($text)
+    !return " /<br1>" + $text
+!endfunction
+
+!function $missing_actions()
+    !return $action1("⋮")
+!endfunction
+
+'# MARK: tokenise
+!procedure $tokenise($token_string, $token_prefix="token", $delimiter=" ")
+    !$i = 0
+
+    !if ($token_string != "")
+        !$token_string = $token_string + " "
+        !$delimiter_position = %strpos($token_string, $delimiter)
+
+        !while $delimiter_position > 0
+            !$i = $i + 1
+            !$token_name = "$" + $token_prefix + $i
+            !$token = %substr($token_string, 0, $delimiter_position)
+            !$token_string = %substr($token_string, $delimiter_position + 1, %strlen($token_string) - $delimiter_position)
+            %set_variable_value($token_name, $token)
+            !$delimiter_position = %strpos($token_string, $delimiter)
+        !endwhile
+    !endif
+!endprocedure
+
+'# MARK: add_note
+!procedure $add_note($text, $dir="", $tags="", $node="")
+    !if $is_visible($tags)
+        !if $dir == ""
+            note as $new_note()
+        !else
+            !if $node == ""
+                note $dir
+            !else
+                note $dir of $make_symbol($node)
+            !endif
+        !endif
+'
+        !$text = $strrepl($text, "<br>", %chr(10))
+$text
+    endnote
+    !elseif %not($remove_hidden_items)
+        !if $dir == ""
+            note as $new_note() <<hidden>>
+        !else
+            !if $node == ""
+                note $dir <<hidden>>
+            !else
+                note $dir of $make_symbol($node) <<hidden>>
+            !endif
+        !endif
+'
+        !$text = $strrepl($text, "<br>", %chr(10)+"<color:#transparent>")
+        !$text = "<color:#transparent>" + $text
+$text
+    endnote
+    !endif
+!endprocedure
+
+!function $ui_content($content)
+    !return "{{\nsalt\n"+$content+"\n}}"
+!endfunction
+
+!if %variable_exists("$in")
+    $tokenise($in, "in")
+!else
+    !$in = ""
+!endif
+
+!if %variable_exists("$out")
+    $tokenise($out, "out")
+!else
+    !$out = ""
+!endif
+
+@enduml
