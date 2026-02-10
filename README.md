@@ -2,6 +2,15 @@
 
 Author: David Fyfe
 
+## Installation
+
+Install using mip:
+
+```python
+import mip
+mip.install("github:planetinnovation/YASMI")
+```
+
 ## Description
 
 Yet Another State Machine Implementation (YASMI) provides a framework for creating a state machine with the following features:

@@ -836,19 +836,24 @@ class TestStateMachine5(unittest.TestCase):
 
         await state_machine.event_1.set()
         await asyncio.sleep(0)
+        await asyncio.sleep(0)
         self.assertEqual(state_machine.active_state_types, ["NewCompositeState2", ["NewState4", "NewState5"]])
 
         await state_machine.event_3.set()
+        await asyncio.sleep(0)
         await asyncio.sleep(0)
         self.assertEqual(state_machine.active_state_types, ["NewCompositeState2", ["NewState4", "NewState6"]])
 
         await state_machine.event_1.set()
         await asyncio.sleep(0)
+        await asyncio.sleep(0)
         self.assertEqual(state_machine.active_state_types, ["NewCompositeState2", ["NewState6"]])
 
         await state_machine.event_3.set()
         await state_machine.trigger_tick()  # needed to trigger detection of concurrent final state
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.1)
+        await state_machine.trigger_tick()  # trigger again to process the final state transition
+        await asyncio.sleep(0.1)
         self.assertEqual(state_machine.active_state_types, ["NewCompositeState1", "NewState1"])
 
         await state_machine.stop_ticker()
