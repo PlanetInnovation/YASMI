@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# MIT license; Copyright (c) 2021-2025, Planet Innovation
+# 436 Elgar Road, Box Hill, 3128, VIC, Australia
+# Phone: +61 3 9945 7510
+#
 
 """Yet Another State Machine Implementation (YASMI, in the tradition of YAML)
 
