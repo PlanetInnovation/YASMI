@@ -18,7 +18,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Run tests
+      - name: Run unit tests
+        env:
+          YASMI_PLANTUML: "0"
+        run: |
+          cd src
+          python -m unittest test_yasmi -v
+
+      - name: Generate PlantUML sequences
         run: |
           cd src
           python -m unittest test_yasmi

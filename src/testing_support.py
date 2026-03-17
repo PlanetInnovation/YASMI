@@ -6,11 +6,14 @@
 
 import asyncio
 import logging
+import os
 from typing import Any, Callable, List, Tuple, Dict, Awaitable
 
 plantuml_logger = logging.getLogger("PlantUML")
-plantuml_logger.setLevel(logging.INFO)
-plantuml_logger.setLevel(logging.DEBUG)
+if os.environ.get("YASMI_PLANTUML", "1") == "0":
+    plantuml_logger.setLevel(logging.CRITICAL)
+else:
+    plantuml_logger.setLevel(logging.DEBUG)
 
 
 # Code based on https://stackoverflow.com/a/23036785/156169
