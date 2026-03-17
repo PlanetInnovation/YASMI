@@ -6,9 +6,8 @@ Author: David Fyfe
 
 Install using mip:
 
-```python
-import mip
-mip.install("github:planetinnovation/YASMI")
+```bash
+mpremote mip install github:planetinnovation/YASMI
 ```
 
 ## Description
